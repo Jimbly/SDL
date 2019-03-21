@@ -3548,6 +3548,7 @@ AS_HELP_STRING([--enable-render-d3d], [enable the Direct3D render driver [[defau
                 AC_DEFINE(SDL_JOYSTICK_WINMM, 1, [ ])
             fi
             AC_DEFINE(SDL_JOYSTICK_HIDAPI, 1, [ ])
+            AC_DEFINE(SDL_JOYSTICK_RAWINPUT, 1, [ ])
             SOURCES="$SOURCES $srcdir/src/joystick/windows/*.c"
             SOURCES="$SOURCES $srcdir/src/joystick/hidapi/*.c"
             SOURCES="$SOURCES $srcdir/src/hidapi/windows/hid.c"
