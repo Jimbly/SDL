@@ -8,7 +8,8 @@
 #include "SDL.h"
 
 // Defaults are all 0
-#define NO_XINPUT 0
+#define NO_XINPUT 0 // Recommended ON, so we still get >4 controllers when Valve controllers are present
+#define NO_XINPUT_CORRELATE 0
 #define NO_RAWINPUT 0
 #define NO_HIDAPI 0
 #define USE_XINPUT_OLD_MAPPING 0
@@ -829,6 +830,15 @@ int main(int argc, char *argv[])
 		// SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX, "1");
 		printf("ON  ");
 #	endif
+
+	printf("Correlate:");
+#	if NO_XINPUT_CORRELATE
+		SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_CORRELATE_XINPUT, "0");
+		printf("Off ");
+#	else
+		printf("ON  ");
+#	endif
+
 
 	printf("GameController:");
 #	if NO_GAMECONTROLLER
