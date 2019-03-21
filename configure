@@ -24263,9 +24263,6 @@ $as_echo "#define SDL_AUDIO_DRIVER_WASAPI 1" >>confdefs.h
 
 $as_echo "#define SDL_JOYSTICK_XINPUT 1" >>confdefs.h
 
-
-$as_echo "#define SDL_JOYSTICK_RAWINPUT 1" >>confdefs.h
-
                 fi
                 if test x$have_dinput = xyes; then
 
@@ -24280,6 +24277,9 @@ $as_echo "#define SDL_JOYSTICK_WINMM 1" >>confdefs.h
             fi
 
 $as_echo "#define SDL_JOYSTICK_HIDAPI 1" >>confdefs.h
+
+
+$as_echo "#define SDL_JOYSTICK_RAWINPUT 1" >>confdefs.h
 
             SOURCES="$SOURCES $srcdir/src/joystick/windows/*.c"
             SOURCES="$SOURCES $srcdir/src/joystick/hidapi/*.c"

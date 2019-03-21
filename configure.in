@@ -3616,7 +3616,6 @@ AC_HELP_STRING([--enable-render-d3d], [enable the Direct3D render driver [[defau
             if test x$have_dinput = xyes -o x$have_xinput = xyes; then
                 if test x$have_xinput = xyes; then
                     AC_DEFINE(SDL_JOYSTICK_XINPUT, 1, [ ])
-                    AC_DEFINE(SDL_JOYSTICK_RAWINPUT, 1, [ ])
                 fi
                 if test x$have_dinput = xyes; then
                     AC_DEFINE(SDL_JOYSTICK_DINPUT, 1, [ ])
@@ -3626,6 +3625,7 @@ AC_HELP_STRING([--enable-render-d3d], [enable the Direct3D render driver [[defau
                 AC_DEFINE(SDL_JOYSTICK_WINMM, 1, [ ])
             fi
             AC_DEFINE(SDL_JOYSTICK_HIDAPI, 1, [ ])
+            AC_DEFINE(SDL_JOYSTICK_RAWINPUT, 1, [ ])
             SOURCES="$SOURCES $srcdir/src/joystick/windows/*.c"
             SOURCES="$SOURCES $srcdir/src/joystick/hidapi/*.c"
             SOURCES="$SOURCES $srcdir/src/hidapi/windows/hid.c"
