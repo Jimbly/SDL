@@ -330,7 +330,7 @@ void renderFrame() {
 	static CHAR_INFO *char_buf;
 #define JOYSTICK_WIDTH 80
 #define LINES_PER_JOYSTICK 3
-	int board_size = max_joysticks * JOYSTICK_WIDTH * LINES_PER_JOYSTICK;
+	int board_size = (max_joysticks * LINES_PER_JOYSTICK + 1) * JOYSTICK_WIDTH;
 	if (board_size > buf_size) {
 		buf_size = board_size;
 		SAFEFREE(char_buf);
@@ -420,8 +420,9 @@ void renderFrame() {
 				if (xoffs + BUTTON_WIDTH > JOYSTICK_WIDTH) {
 					continue;
 				}
-				bufPrintf(lines[yy] + xoffs, BUTTON_WIDTH, (js.buttons_down[jj] || js.buttons_press_count[jj]) ?
-					FOREGROUND_INTENSITY | FOREGROUND_GREEN :
+				bufPrintf(lines[yy] + xoffs, BUTTON_WIDTH,
+					js.buttons_press_count[jj] ? FOREGROUND_INTENSITY | FOREGROUND_BLUE :
+					js.buttons_down[jj] ? FOREGROUND_INTENSITY | FOREGROUND_GREEN :
 					FOREGROUND_INTENSITY, "%s", buttonName(!!js.gamecontroller, jj));
 			}
 			x += BUTTON_WIDTH * buttons_per_line;
@@ -447,8 +448,12 @@ void renderFrame() {
 			last = ii;
 		}
 	}
+	CHAR_INFO *line_last = char_buf + line * JOYSTICK_WIDTH;
+	static int anim_idx = 0;
+	++anim_idx;
+	bufPrintf(line_last, 1, DEFAULT_COLOR, "%c", "/-\\|"[anim_idx % 4]);
 
-	COORD dims = { (SHORT)JOYSTICK_WIDTH, (SHORT)max_joysticks * LINES_PER_JOYSTICK };
+	COORD dims = { (SHORT)JOYSTICK_WIDTH, (SHORT)max_joysticks * LINES_PER_JOYSTICK + 1 };
 	COORD pos = { 0, 0 };
 	SMALL_RECT region = { 0, 1, (SHORT)MIN(console_w, dims.X), (SHORT)MIN(console_h, dims.Y + 1) };
 	WriteConsoleOutput(console, char_buf, dims, pos, &region);
