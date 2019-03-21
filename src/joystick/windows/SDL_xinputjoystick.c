@@ -29,6 +29,7 @@
 #include "SDL_timer.h"
 #include "SDL_windowsjoystick_c.h"
 #include "SDL_xinputjoystick_c.h"
+#include "SDL_rawinputjoystick_c.h"
 #include "../hidapi/SDL_hidapijoystick_c.h"
 
 /*
@@ -262,6 +263,14 @@ AddXInputDevice(Uint8 userid, BYTE SubType, JoyStick_DeviceData **pContext)
 #ifdef SDL_JOYSTICK_HIDAPI
     if (HIDAPI_IsDevicePresent(vendor, product, version)) {
         /* The HIDAPI driver is taking care of this device */
+        SDL_free(pNewJoystick);
+        return;
+    }
+#endif
+
+#ifdef SDL_JOYSTICK_RAWINPUT
+    if (RAWINPUT_IsDevicePresent(vendor, product, version)) {
+        /* The RAWINPUT driver is taking care of this device */
         SDL_free(pNewJoystick);
         return;
     }

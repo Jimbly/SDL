@@ -24708,6 +24708,9 @@ $as_echo "#define SDL_JOYSTICK_WINMM 1" >>confdefs.h
 
 $as_echo "#define SDL_JOYSTICK_HIDAPI 1" >>confdefs.h
 
+
+$as_echo "#define SDL_JOYSTICK_RAWINPUT 1" >>confdefs.h
+
             SOURCES="$SOURCES $srcdir/src/joystick/windows/*.c"
             SOURCES="$SOURCES $srcdir/src/joystick/hidapi/*.c"
             SOURCES="$SOURCES $srcdir/src/hidapi/windows/hid.c"

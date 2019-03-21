@@ -35,8 +35,6 @@
 #ifdef __WINDOWS__
 /* On Windows, Xbox One controllers are handled by the Xbox 360 driver */
 #undef SDL_JOYSTICK_HIDAPI_XBOXONE
-/* It turns out HIDAPI for Xbox controllers doesn't allow background input */
-#undef SDL_JOYSTICK_HIDAPI_XBOX360
 #endif
 
 #ifdef __MACOSX__
@@ -76,6 +74,11 @@ typedef struct _SDL_HIDAPI_DeviceDriver
                              Uint16 low_frequency_rumble,
                              Uint16 high_frequency_rumble,
                              Uint32 duration_ms);
+    void           (*PostUpdate)(void);
+#ifdef SDL_JOYSTICK_RAWINPUT
+    void           (*HandleStatePacketFromRAWINPUT)(SDL_HIDAPI_DriverData *context,
+                                                    SDL_Joystick *joystick, Uint8 *data, int size);
+#endif
 
 } SDL_HIDAPI_DeviceDriver;
 
