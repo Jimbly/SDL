@@ -555,6 +555,19 @@ extern "C" {
  */
 #define SDL_HINT_JOYSTICK_HIDAPI_XBOX   "SDL_JOYSTICK_HIDAPI_XBOX"
 
+ /**
+  *  \brief  A variable controlling whether the HIDAPI driver for XBox controllers on Windows should pull correlated
+  *      data from XInput.
+  *
+  *  This variable can be set to the following values:
+  *    "0"       - HIDAPI Xbox driver will only use HIDAPI data
+  *    "1"       - HIDAPI Xbox driver will also pull data from XInput, providing better trigger axes, guide button
+  *                presses, and rumble support
+  *
+  *  The default is "1".  This hint applies to any joysticks opened after setting the hint.
+  */
+#define SDL_HINT_JOYSTICK_HIDAPI_CORRELATE_XINPUT   "SDL_JOYSTICK_HIDAPI_CORRELATE_XINPUT"
+
 /**
  *  \brief  A variable that controls whether Steam Controllers should be exposed using the SDL joystick and game controller APIs
  *

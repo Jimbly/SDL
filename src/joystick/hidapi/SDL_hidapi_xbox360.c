@@ -618,7 +618,7 @@ HIDAPI_DriverXbox360_Init(SDL_Joystick *joystick, hid_device *dev, Uint16 vendor
     }
 #ifdef SDL_JOYSTICK_HIDAPI_WINDOWS_XINPUT
     xinput_device_change = SDL_TRUE;
-    ctx->xinput_enabled = SDL_GetHintBoolean(SDL_HINT_XINPUT_ENABLED, SDL_TRUE);
+    ctx->xinput_enabled = SDL_GetHintBoolean(SDL_HINT_JOYSTICK_HIDAPI_CORRELATE_XINPUT, SDL_TRUE);
     if (ctx->xinput_enabled && (WIN_LoadXInputDLL() < 0 || !XINPUTGETSTATE)) {
         ctx->xinput_enabled = SDL_FALSE;
     }
