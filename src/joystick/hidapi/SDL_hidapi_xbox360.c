@@ -585,6 +585,10 @@ HIDAPI_DriverXbox360_IsSupportedDevice(Uint16 vendor_id, Uint16 product_id, Uint
         /* This is the Steam Virtual Gamepad, which isn't supported by this driver */
         return SDL_FALSE;
     }
+    if (vendor_id == 0x045e && product_id == 0x02e0) {
+        /* This is the old Bluetooth Xbox One S firmware, which isn't supported by this driver */
+        return SDL_FALSE;
+    }
     return SDL_IsJoystickXbox360(vendor_id, product_id) || SDL_IsJoystickXboxOne(vendor_id, product_id);
 #else
     return SDL_IsJoystickXbox360(vendor_id, product_id);
@@ -657,6 +661,12 @@ static int
 HIDAPI_DriverXbox360_NumJoysticks(SDL_HIDAPI_DriverData *context)
 {
     return 1;
+}
+
+static int
+HIDAPI_DriverXbox360_PlayerIndexForIndex(SDL_HIDAPI_DriverData *context, int index)
+{
+    return -1;
 }
 
 static SDL_JoystickID
@@ -1342,6 +1352,7 @@ SDL_HIDAPI_DeviceDriver SDL_HIDAPI_DriverXbox360 =
     HIDAPI_DriverXbox360_QuitDriver,
     HIDAPI_DriverXbox360_UpdateDriver,
     HIDAPI_DriverXbox360_NumJoysticks,
+    HIDAPI_DriverXbox360_PlayerIndexForIndex,
     HIDAPI_DriverXbox360_InstanceIDForIndex,
     HIDAPI_DriverXbox360_OpenJoystick,
     HIDAPI_DriverXbox360_Rumble,

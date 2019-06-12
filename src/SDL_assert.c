@@ -123,18 +123,24 @@ static void SDL_GenerateAssertionReport(void)
 #if defined(__WATCOMC__)
 #pragma aux SDL_ExitProcess aborts;
 #endif
-static void SDL_ExitProcess(int exitcode)
+static SDL_NORETURN void SDL_ExitProcess(int exitcode)
 {
 #ifdef __WIN32__
     /* "if you do not know the state of all threads in your process, it is
        better to call TerminateProcess than ExitProcess"
        https://msdn.microsoft.com/en-us/library/windows/desktop/ms682658(v=vs.85).aspx */
     TerminateProcess(GetCurrentProcess(), exitcode);
-
+    /* MingW doesn't have TerminateProcess marked as noreturn, so add an
+       ExitProcess here that will never be reached but make MingW happy. */
+    ExitProcess(exitcode);
 #elif defined(__EMSCRIPTEN__)
     emscripten_cancel_main_loop();  /* this should "kill" the app. */
     emscripten_force_exit(exitcode);  /* this should "kill" the app. */
     exit(exitcode);
+#elif defined(__HAIKU__)  /* Haiku has _Exit, but it's not marked noreturn. */
+    _exit(exitcode);
+#elif defined(HAVE__EXIT) /* Upper case _Exit() */
+    _Exit(exitcode);
 #else
     _exit(exitcode);
 #endif
@@ -144,7 +150,7 @@ static void SDL_ExitProcess(int exitcode)
 #if defined(__WATCOMC__)
 #pragma aux SDL_AbortAssertion aborts;
 #endif
-static void SDL_AbortAssertion(void)
+static SDL_NORETURN void SDL_AbortAssertion(void)
 {
     SDL_Quit();
     SDL_ExitProcess(42);

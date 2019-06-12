@@ -316,6 +316,16 @@ extern "C" {
 #define SDL_HINT_TOUCH_MOUSE_EVENTS    "SDL_TOUCH_MOUSE_EVENTS"
 
 /**
+ *  \brief  A variable controlling whether mouse events should generate synthetic touch events
+ *
+ *  This variable can be set to the following values:
+ *    "0"       - Mouse events will not generate touch events (default for desktop platforms)
+ *    "1"       - Mouse events will generate touch events (default for mobile platforms, such as Android and iOS)
+ */
+
+#define SDL_HINT_MOUSE_TOUCH_EVENTS    "SDL_MOUSE_TOUCH_EVENTS"
+
+/**
  *  \brief Minimize your SDL_Window if it loses key focus when in fullscreen mode. Defaults to true.
  *
  */
@@ -879,19 +889,7 @@ extern "C" {
  */
 #define SDL_HINT_IME_INTERNAL_EDITING "SDL_IME_INTERNAL_EDITING"
 
- /**
- * \brief A variable to control whether mouse and touch events are to be treated together or separately
- *
- * The variable can be set to the following values:
- *   "0"       - Mouse events will be handled as touch events, and touch will raise fake mouse
- *               events. This is the behaviour of SDL <= 2.0.3. (default)
- *   "1"       - Mouse events will be handled separately from pure touch events.
- *
- * The value of this hint is used at runtime, so it can be changed at any time.
- */
-#define SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH "SDL_ANDROID_SEPARATE_MOUSE_AND_TOUCH"
-
- /**
+/**
  * \brief A variable to control whether we trap the Android back button to handle it manually.
  *        This is necessary for the right mouse button to work on some Android devices, or
  *        to be able to trap the back button for use in your code reliably.  If set to true,
@@ -907,6 +905,17 @@ extern "C" {
  * The value of this hint is used at runtime, so it can be changed at any time.
  */
 #define SDL_HINT_ANDROID_TRAP_BACK_BUTTON "SDL_ANDROID_TRAP_BACK_BUTTON"
+
+/**
+ * \brief A variable to control whether the event loop will block itself when the app is paused.
+ *
+ * The variable can be set to the following values:
+ *   "0"       - Non blocking.
+ *   "1"       - Blocking. (default)
+ *
+ * The value should be set before SDL is initialized.
+ */
+#define SDL_HINT_ANDROID_BLOCK_ON_PAUSE "SDL_ANDROID_BLOCK_ON_PAUSE"
 
  /**
  * \brief A variable to control whether the return key on the soft keyboard
@@ -1133,6 +1142,70 @@ extern "C" {
 #define SDL_HINT_EVENT_LOGGING   "SDL_EVENT_LOGGING"
 
 
+
+/**
+ *  \brief  Controls how the size of the RIFF chunk affects the loading of a WAVE file.
+ *
+ *  The size of the RIFF chunk (which includes all the sub-chunks of the WAVE
+ *  file) is not always reliable. In case the size is wrong, it's possible to
+ *  just ignore it and step through the chunks until a fixed limit is reached.
+ *
+ *  Note that files that have trailing data unrelated to the WAVE file or
+ *  corrupt files may slow down the loading process without a reliable boundary.
+ *  By default, SDL stops after 10000 chunks to prevent wasting time. Use the
+ *  environment variable SDL_WAVE_CHUNK_LIMIT to adjust this value.
+ *
+ *  This variable can be set to the following values:
+ *
+ *    "force"        - Always use the RIFF chunk size as a boundary for the chunk search
+ *    "ignorezero"   - Like "force", but a zero size searches up to 4 GiB (default)
+ *    "ignore"       - Ignore the RIFF chunk size and always search up to 4 GiB
+ *    "maximum"      - Search for chunks until the end of file (not recommended)
+ */
+#define SDL_HINT_WAVE_RIFF_CHUNK_SIZE   "SDL_WAVE_RIFF_CHUNK_SIZE"
+
+/**
+ *  \brief  Controls how a truncated WAVE file is handled.
+ *
+ *  A WAVE file is considered truncated if any of the chunks are incomplete or
+ *  the data chunk size is not a multiple of the block size. By default, SDL
+ *  decodes until the first incomplete block, as most applications seem to do.
+ *
+ *  This variable can be set to the following values:
+ *
+ *    "verystrict" - Raise an error if the file is truncated
+ *    "strict"     - Like "verystrict", but the size of the RIFF chunk is ignored
+ *    "dropframe"  - Decode until the first incomplete sample frame
+ *    "dropblock"  - Decode until the first incomplete block (default)
+ */
+#define SDL_HINT_WAVE_TRUNCATION   "SDL_WAVE_TRUNCATION"
+
+/**
+ *  \brief  Controls how the fact chunk affects the loading of a WAVE file.
+ *
+ *  The fact chunk stores information about the number of samples of a WAVE
+ *  file. The Standards Update from Microsoft notes that this value can be used
+ *  to 'determine the length of the data in seconds'. This is especially useful
+ *  for compressed formats (for which this is a mandatory chunk) if they produce
+ *  multiple sample frames per block and truncating the block is not allowed.
+ *  The fact chunk can exactly specify how many sample frames there should be
+ *  in this case.
+ *
+ *  Unfortunately, most application seem to ignore the fact chunk and so SDL
+ *  ignores it by default as well.
+ *
+ *  This variable can be set to the following values:
+ *
+ *    "truncate"    - Use the number of samples to truncate the wave data if
+ *                    the fact chunk is present and valid
+ *    "strict"      - Like "truncate", but raise an error if the fact chunk
+ *                    is invalid, not present for non-PCM formats, or if the
+ *                    data chunk doesn't have that many samples
+ *    "ignorezero"  - Like "truncate", but ignore fact chunk if the number of
+ *                    samples is zero
+ *    "ignore"      - Ignore fact chunk entirely (default)
+ */
+#define SDL_HINT_WAVE_FACT_CHUNK   "SDL_WAVE_FACT_CHUNK"
 
 /**
  *  \brief  An enumeration of hint priorities

@@ -338,6 +338,12 @@ HIDAPI_DriverPS4_NumJoysticks(SDL_HIDAPI_DriverData *context)
     return 1;
 }
 
+static int
+HIDAPI_DriverPS4_PlayerIndexForIndex(SDL_HIDAPI_DriverData *context, int index)
+{
+    return -1;
+}
+
 static SDL_JoystickID
 HIDAPI_DriverPS4_InstanceIDForIndex(SDL_HIDAPI_DriverData *context, int index)
 {
@@ -354,7 +360,7 @@ HIDAPI_DriverPS4_OpenJoystick(SDL_HIDAPI_DriverData *context, SDL_Joystick *joys
     HIDAPI_DriverPS4_Rumble(context, joystick, 0, 0, 0);
 
     /* Initialize the joystick capabilities */
-    joystick->nbuttons = SDL_CONTROLLER_BUTTON_MAX;
+    joystick->nbuttons = 16;
     joystick->naxes = SDL_CONTROLLER_AXIS_MAX;
     joystick->epowerlevel = SDL_JOYSTICK_POWER_WIRED;
 
@@ -509,6 +515,7 @@ HIDAPI_DriverPS4_HandleStatePacket(SDL_Joystick *joystick, hid_device *dev, SDL_
         Uint8 data = (packet->rgucButtonsHatAndCounter[2] & 0x03);
 
         SDL_PrivateJoystickButton(joystick, SDL_CONTROLLER_BUTTON_GUIDE, (data & 0x01) ? SDL_PRESSED : SDL_RELEASED);
+        SDL_PrivateJoystickButton(joystick, 15, (data & 0x02) ? SDL_PRESSED : SDL_RELEASED);
     }
 
     axis = ((int)packet->ucTriggerLeft * 257) - 32768;
@@ -592,6 +599,7 @@ SDL_HIDAPI_DeviceDriver SDL_HIDAPI_DriverPS4 =
     HIDAPI_DriverPS4_QuitDriver,
     HIDAPI_DriverPS4_UpdateDriver,
     HIDAPI_DriverPS4_NumJoysticks,
+    HIDAPI_DriverPS4_PlayerIndexForIndex,
     HIDAPI_DriverPS4_InstanceIDForIndex,
     HIDAPI_DriverPS4_OpenJoystick,
     HIDAPI_DriverPS4_Rumble
