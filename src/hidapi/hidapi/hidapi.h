@@ -37,10 +37,6 @@
       #define HID_API_CALL /**< API call macro */
 #endif
 
-#if !defined(_WIN32)
-#define HID_API_SUPPORT_SERIAL
-#endif
-
 #define HID_API_EXPORT_CALL HID_API_EXPORT HID_API_CALL /**< API export and call macro*/
 
 #if defined(__cplusplus) && !defined(NAMESPACE)
@@ -61,10 +57,8 @@ namespace NAMESPACE {
 			unsigned short vendor_id;
 			/** Device Product ID */
 			unsigned short product_id;
-#ifdef HID_API_SUPPORT_SERIAL
 			/** Serial Number */
 			wchar_t *serial_number;
-#endif
 			/** Device Release Number in binary-coded decimal,
 			    also known as Device Version Number */
 			unsigned short release_number;
@@ -367,9 +361,7 @@ namespace NAMESPACE {
 			@returns
 				This function returns 0 on success and -1 on error.
 		*/
-#ifdef HID_API_SUPPORT_SERIAL
 		int HID_API_EXPORT_CALL hid_get_serial_number_string(hid_device *device, wchar_t *string, size_t maxlen);
-#endif
 
 		/** @brief Get a string from a HID device, based on its string index.
 

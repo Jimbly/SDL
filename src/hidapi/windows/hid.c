@@ -470,14 +470,12 @@ struct hid_device_info HID_API_EXPORT * HID_API_CALL hid_enumerate(unsigned shor
 			else
 				cur_dev->path = NULL;
 
-#ifdef HID_API_SUPPORT_SERIAL
 			/* Serial Number */
 			hidp_res = HidD_GetSerialNumberString(write_handle, wstr, sizeof(wstr));
 			wstr[WSTR_LEN-1] = 0x0000;
 			if (hidp_res) {
 				cur_dev->serial_number = _wcsdup(wstr);
 			}
-#endif
 
 			/* Manufacturer String */
 			hidp_res = HidD_GetManufacturerString(write_handle, wstr, sizeof(wstr));
@@ -544,9 +542,7 @@ void  HID_API_EXPORT HID_API_CALL hid_free_enumeration(struct hid_device_info *d
 	while (d) {
 		struct hid_device_info *next = d->next;
 		free(d->path);
-#ifdef HID_API_SUPPORT_SERIAL
 		free(d->serial_number);
-#endif
 		free(d->manufacturer_string);
 		free(d->product_string);
 		free(d);
@@ -568,12 +564,10 @@ HID_API_EXPORT hid_device * HID_API_CALL hid_open(unsigned short vendor_id, unsi
 		if (cur_dev->vendor_id == vendor_id &&
 		    cur_dev->product_id == product_id) {
 			if (serial_number) {
-#ifdef HID_API_SUPPORT_SERIAL
 				if (wcscmp(serial_number, cur_dev->serial_number) == 0) {
 					path_to_open = cur_dev->path;
 					break;
 				}
-#endif
 			}
 			else {
 				path_to_open = cur_dev->path;
@@ -897,7 +891,6 @@ int HID_API_EXPORT_CALL HID_API_CALL hid_get_product_string(hid_device *dev, wch
 	return 0;
 }
 
-#ifdef HID_API_SUPPORT_SERIAL
 int HID_API_EXPORT_CALL HID_API_CALL hid_get_serial_number_string(hid_device *dev, wchar_t *string, size_t maxlen)
 {
 	BOOL res;
@@ -910,7 +903,6 @@ int HID_API_EXPORT_CALL HID_API_CALL hid_get_serial_number_string(hid_device *de
 
 	return 0;
 }
-#endif
 
 int HID_API_EXPORT_CALL HID_API_CALL hid_get_indexed_string(hid_device *dev, int string_index, wchar_t *string, size_t maxlen)
 {
