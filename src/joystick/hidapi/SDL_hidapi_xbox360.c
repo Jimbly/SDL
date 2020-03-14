@@ -923,10 +923,10 @@ HIDAPI_DriverXbox360_HandleStatePacket(SDL_Joystick *joystick, hid_device *dev, 
 
 #ifdef SDL_JOYSTICK_RAWINPUT
 static void
-HIDAPI_DriverXbox360_HandleStatePacketFromRAWINPUT(SDL_HIDAPI_DriverData *context, SDL_Joystick *joystick, Uint8 *data, int size)
+HIDAPI_DriverXbox360_HandleStatePacketFromRAWINPUT(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, Uint8 *data, int size)
 {
-    SDL_DriverXbox360_Context *ctx = (SDL_DriverXbox360_Context *)context->context;
-    HIDAPI_DriverXbox360_HandleStatePacket(joystick, NULL, ctx, data, size);
+	SDL_DriverXbox360_Context *ctx = (SDL_DriverXbox360_Context *)device->context;
+	HIDAPI_DriverXbox360_HandleStatePacket(joystick, NULL, ctx, data, size);
 }
 #endif
 
@@ -987,9 +987,10 @@ HIDAPI_DriverXbox360_HandleStatePacket(SDL_Joystick *joystick, hid_device *dev, 
 #endif /* __WIN32__ */
 
 static void
-HIDAPI_DriverXbox360_UpdatedOtherAPIs(SDL_HIDAPI_Device *device)
+HIDAPI_DriverXbox360_UpdateOtherAPIs(SDL_HIDAPI_Device *device, SDL_Joystick *joystick)
 {
-    SDL_bool has_trigger_data = SDL_FALSE;
+	SDL_DriverXbox360_Context *ctx = (SDL_DriverXbox360_Context *)device->context;
+	SDL_bool has_trigger_data = SDL_FALSE;
     SDL_bool correlated = SDL_FALSE;
 #ifdef SDL_JOYSTICK_HIDAPI_WINDOWS_MATCHING
     WindowsMatchState match_state_xinput;
@@ -1238,7 +1239,7 @@ HIDAPI_DriverXbox360_UpdateDevice(SDL_HIDAPI_Device *device)
         /* Read error, device is disconnected */
         HIDAPI_JoystickDisconnected(device, joystick->instance_id);
     } else {
-        HIDAPI_DriverXbox360_UpdatedOtherAPIs(device);
+        HIDAPI_DriverXbox360_UpdateOtherAPIs(device, joystick);
     }
 
     
@@ -1253,8 +1254,6 @@ HIDAPI_DriverXbox360_CloseJoystick(SDL_HIDAPI_Device *device, SDL_Joystick *joys
 #endif
     
 #ifdef SDL_JOYSTICK_HIDAPI_WINDOWS_MATCHING
-    SDL_Joystick *joystick = SDL_JoystickFromInstanceID(ctx->joystickID);
-
     if (guide_button_candidate.joystick == joystick)
         guide_button_candidate.joystick = NULL;
     if (guide_button_candidate.last_joystick == joystick)

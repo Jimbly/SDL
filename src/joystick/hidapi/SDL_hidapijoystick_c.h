@@ -103,7 +103,7 @@ typedef struct _SDL_HIDAPI_DeviceDriver
     void (*FreeDevice)(SDL_HIDAPI_Device *device);
     void (*PostUpdate)(void);
 #ifdef SDL_JOYSTICK_RAWINPUT
-    void (*HandleStatePacketFromRAWINPUT)(SDL_HIDAPI_DriverData *context, SDL_Joystick *joystick, Uint8 *data, int size);
+    void (*HandleStatePacketFromRAWINPUT)(SDL_HIDAPI_Device *device, SDL_Joystick *joystick, Uint8 *data, int size);
 #endif
 
 } SDL_HIDAPI_DeviceDriver;
