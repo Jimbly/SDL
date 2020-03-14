@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2020 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -20,7 +20,7 @@
 */
 #include "../../SDL_internal.h"
 
-#if !SDL_RENDER_DISABLED
+#if SDL_VIDEO_RENDER_SW && !SDL_RENDER_DISABLED
 
 #include "../SDL_sysrender.h"
 #include "SDL_render_sw_c.h"
@@ -82,20 +82,25 @@ SW_WindowEvent(SDL_Renderer * renderer, const SDL_WindowEvent *event)
 static int
 SW_GetOutputSize(SDL_Renderer * renderer, int *w, int *h)
 {
-    SDL_Surface *surface = SW_ActivateRenderer(renderer);
+    SW_RenderData *data = (SW_RenderData *) renderer->driverdata;
 
-    if (surface) {
+    if (data->surface) {
         if (w) {
-            *w = surface->w;
+            *w = data->surface->w;
         }
         if (h) {
-            *h = surface->h;
+            *h = data->surface->h;
         }
         return 0;
-    } else {
-        SDL_SetError("Software renderer doesn't have an output surface");
-        return -1;
     }
+
+    if (renderer->window) {
+        SDL_GetWindowSize(renderer->window, w, h);
+        return 0;
+    }
+
+    SDL_SetError("Software renderer doesn't have an output surface");
+    return -1;
 }
 
 static int
@@ -174,12 +179,17 @@ SW_UnlockTexture(SDL_Renderer * renderer, SDL_Texture * texture)
 {
 }
 
+static void
+SW_SetTextureScaleMode(SDL_Renderer * renderer, SDL_Texture * texture, SDL_ScaleMode scaleMode)
+{
+}
+
 static int
 SW_SetRenderTarget(SDL_Renderer * renderer, SDL_Texture * texture)
 {
     SW_RenderData *data = (SW_RenderData *) renderer->driverdata;
 
-    if (texture ) {
+    if (texture) {
         data->surface = (SDL_Surface *) texture->driverdata;
     } else {
         data->surface = data->window;
@@ -389,8 +399,8 @@ SW_RenderCopyEx(SDL_Renderer * renderer, SDL_Surface *surface, SDL_Texture * tex
         blitRequired = SDL_TRUE;
     }
 
-    /* The color and alpha modulation has to be applied before the rotation when using the NONE and MOD blend modes. */
-    if ((blendmode == SDL_BLENDMODE_NONE || blendmode == SDL_BLENDMODE_MOD) && (alphaMod & rMod & gMod & bMod) != 255) {
+    /* The color and alpha modulation has to be applied before the rotation when using the NONE, MOD or MUL blend modes. */
+    if ((blendmode == SDL_BLENDMODE_NONE || blendmode == SDL_BLENDMODE_MOD || blendmode == SDL_BLENDMODE_MUL) && (alphaMod & rMod & gMod & bMod) != 255) {
         applyModulation = SDL_TRUE;
         SDL_SetSurfaceAlphaMod(src_clone, alphaMod);
         SDL_SetSurfaceColorMod(src_clone, rMod, gMod, bMod);
@@ -563,7 +573,7 @@ PrepTextureForCopy(const SDL_RenderCommand *cmd)
     SDL_Surface *surface = (SDL_Surface *) texture->driverdata;
     const SDL_bool colormod = ((r & g & b) != 0xFF);
     const SDL_bool alphamod = (a != 0xFF);
-    const SDL_bool blending = ((blend == SDL_BLENDMODE_ADD) || (blend == SDL_BLENDMODE_MOD));
+    const SDL_bool blending = ((blend == SDL_BLENDMODE_ADD) || (blend == SDL_BLENDMODE_MOD) || (blend == SDL_BLENDMODE_MUL));
 
     if (colormod || alphamod || blending) {
         SDL_SetSurfaceRLE(surface, 0);
@@ -825,6 +835,7 @@ SW_CreateRendererForSurface(SDL_Surface * surface)
     renderer->UpdateTexture = SW_UpdateTexture;
     renderer->LockTexture = SW_LockTexture;
     renderer->UnlockTexture = SW_UnlockTexture;
+    renderer->SetTextureScaleMode = SW_SetTextureScaleMode;
     renderer->SetRenderTarget = SW_SetRenderTarget;
     renderer->QueueSetViewport = SW_QueueSetViewport;
     renderer->QueueSetDrawColor = SW_QueueSetViewport;  /* SetViewport and SetDrawColor are (currently) no-ops. */
@@ -878,6 +889,6 @@ SDL_RenderDriver SW_RenderDriver = {
      0}
 };
 
-#endif /* !SDL_RENDER_DISABLED */
+#endif /* SDL_VIDEO_RENDER_SW && !SDL_RENDER_DISABLED */
 
 /* vi: set ts=4 sw=4 expandtab: */

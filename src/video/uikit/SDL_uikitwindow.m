@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2020 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -67,24 +67,17 @@
 
 @implementation SDL_uikitwindow
 
-- (void)didAddSubview:(UIView *)subview
-{
-	[super didAddSubview:subview];
-	// We need to pach the enabled state in subviews as a Metal view gets added and covers up the SDL_uikitview that handles touch.
-	// So set needs layout so that the layout gets done (which is where we patch the flags) Johna.
-    NSArray<UIView*>* subviews = self.subviews;
-	for (int i=0; i<[subviews count]; i++)
-	{
-		UIView *view = [subviews objectAtIndex:i];
-		// NSLog( @"View %p enabled %d\n", view, view.userInteractionEnabled );
-		[view setNeedsLayout];  // force the subviews to layout.
-	}
-}
-
 - (void)layoutSubviews
 {
-    /* Workaround to fix window orientation issues in iOS 8+. */
-    self.frame = self.screen.bounds;
+    /* Workaround to fix window orientation issues in iOS 8. */
+    /* As of July 1 2019, I haven't been able to reproduce any orientation
+     * issues with this disabled on iOS 12. The issue this is meant to fix might
+     * only happen on iOS 8, or it might have been fixed another way with other
+     * code... This code prevents split view (iOS 9+) from working on iPads, so
+     * we want to avoid using it if possible. */
+    if (!UIKit_IsSystemVersionAtLeast(9.0)) {
+        self.frame = self.screen.bounds;
+    }
     [super layoutSubviews];
 }
 
@@ -371,12 +364,16 @@ UIKit_GetWindowWMInfo(_THIS, SDL_Window * window, SDL_SysWMinfo * info)
 
             /* These struct members were added in SDL 2.0.4. */
             if (versionnum >= SDL_VERSIONNUM(2,0,4)) {
+#if SDL_VIDEO_OPENGL_ES || SDL_VIDEO_OPENGL_ES2
                 if ([data.viewcontroller.view isKindOfClass:[SDL_uikitopenglview class]]) {
                     SDL_uikitopenglview *glview = (SDL_uikitopenglview *)data.viewcontroller.view;
                     info->info.uikit.framebuffer = glview.drawableFramebuffer;
                     info->info.uikit.colorbuffer = glview.drawableRenderbuffer;
                     info->info.uikit.resolveFramebuffer = glview.msaaResolveFramebuffer;
                 } else {
+#else
+                {
+#endif
                     info->info.uikit.framebuffer = 0;
                     info->info.uikit.colorbuffer = 0;
                     info->info.uikit.resolveFramebuffer = 0;

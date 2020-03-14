@@ -544,14 +544,14 @@ RAWINPUT_JoystickOpen(SDL_Joystick * joystick, int device_index)
 }
 
 static int
-RAWINPUT_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble, Uint32 duration_ms)
+RAWINPUT_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble)
 {
     struct joystick_hwdata *hwdata = joystick->hwdata;
     SDL_RAWINPUT_Device *device = hwdata->device;
     int result;
 
     SDL_LockMutex(hwdata->mutex);
-    result = device->driver->Rumble(&device->devdata, joystick, low_frequency_rumble, high_frequency_rumble, duration_ms);
+    result = device->driver->Rumble(&device->devdata, joystick, low_frequency_rumble, high_frequency_rumble);
     SDL_UnlockMutex(hwdata->mutex);
     return result;
 }

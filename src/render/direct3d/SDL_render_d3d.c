@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2020 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -234,6 +234,10 @@ D3D_InitRenderState(D3D_RenderData *data)
     D3DMATRIX matrix;
 
     IDirect3DDevice9 *device = data->device;
+    IDirect3DDevice9_SetPixelShader(device, NULL);
+    IDirect3DDevice9_SetTexture(device, 0, NULL);
+    IDirect3DDevice9_SetTexture(device, 1, NULL);
+    IDirect3DDevice9_SetTexture(device, 2, NULL);
     IDirect3DDevice9_SetFVF(device, D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
     IDirect3DDevice9_SetVertexShader(device, NULL);
     IDirect3DDevice9_SetRenderState(device, D3DRS_ZENABLE, D3DZB_FALSE);
@@ -708,8 +712,27 @@ D3D_UnlockTexture(SDL_Renderer * renderer, SDL_Texture * texture)
         texturedata->texture.dirty = SDL_TRUE;
         if (data->drawstate.texture == texture) {
             data->drawstate.texture = NULL;
+            data->drawstate.shader = NULL;
+            IDirect3DDevice9_SetPixelShader(data->device, NULL);
+            IDirect3DDevice9_SetTexture(data->device, 0, NULL);
+            if (texturedata->yuv) {
+                IDirect3DDevice9_SetTexture(data->device, 1, NULL);
+                IDirect3DDevice9_SetTexture(data->device, 2, NULL);
+            }
         }
-   }
+    }
+}
+
+static void
+D3D_SetTextureScaleMode(SDL_Renderer * renderer, SDL_Texture * texture, SDL_ScaleMode scaleMode)
+{
+    D3D_TextureData *texturedata = (D3D_TextureData *)texture->driverdata;
+
+    if (!texturedata) {
+        return;
+    }
+
+    texturedata->scaleMode = (scaleMode == SDL_ScaleModeNearest) ? D3DTEXF_POINT : D3DTEXF_LINEAR;
 }
 
 static int
@@ -1127,6 +1150,13 @@ SetDrawState(D3D_RenderData *data, const SDL_RenderCommand *cmd)
         }
 
         data->drawstate.texture = texture;
+    } else if (texture) {
+        D3D_TextureData *texturedata = (D3D_TextureData *) texture->driverdata;
+        UpdateDirtyTexture(data->device, &texturedata->texture);
+        if (texturedata->yuv) {
+            UpdateDirtyTexture(data->device, &texturedata->utexture);
+            UpdateDirtyTexture(data->device, &texturedata->vtexture);
+        }
     }
 
     if (blend != data->drawstate.blend) {
@@ -1209,14 +1239,14 @@ D3D_RunCommandQueue(SDL_Renderer * renderer, SDL_RenderCommand *cmd, void *verti
 
     /* upload the new VBO data for this set of commands. */
     vbo = data->vertexBuffers[vboidx];
-    if (!vbo || (data->vertexBufferSize[vboidx] < vertsize)) {
+    if (data->vertexBufferSize[vboidx] < vertsize) {
         const DWORD usage = D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY;
         const DWORD fvf = D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1;
         if (vbo) {
             IDirect3DVertexBuffer9_Release(vbo);
         }
 
-        if (FAILED(IDirect3DDevice9_CreateVertexBuffer(data->device, (UINT) vertsize, usage, fvf, D3DPOOL_MANAGED, &vbo, NULL))) {
+        if (FAILED(IDirect3DDevice9_CreateVertexBuffer(data->device, (UINT) vertsize, usage, fvf, D3DPOOL_DEFAULT, &vbo, NULL))) {
             vbo = NULL;
         }
         data->vertexBuffers[vboidx] = vbo;
@@ -1433,20 +1463,17 @@ D3D_RenderReadPixels(SDL_Renderer * renderer, const SDL_Rect * rect,
 
     result = IDirect3DSurface9_GetDesc(backBuffer, &desc);
     if (FAILED(result)) {
-        IDirect3DSurface9_Release(backBuffer);
         return D3D_SetError("GetDesc()", result);
     }
 
     result = IDirect3DDevice9_CreateOffscreenPlainSurface(data->device, desc.Width, desc.Height, desc.Format, D3DPOOL_SYSTEMMEM, &surface, NULL);
     if (FAILED(result)) {
-        IDirect3DSurface9_Release(backBuffer);
         return D3D_SetError("CreateOffscreenPlainSurface()", result);
     }
 
     result = IDirect3DDevice9_GetRenderTargetData(data->device, backBuffer, surface);
     if (FAILED(result)) {
         IDirect3DSurface9_Release(surface);
-        IDirect3DSurface9_Release(backBuffer);
         return D3D_SetError("GetRenderTargetData()", result);
     }
 
@@ -1458,7 +1485,6 @@ D3D_RenderReadPixels(SDL_Renderer * renderer, const SDL_Rect * rect,
     result = IDirect3DSurface9_LockRect(surface, &locked, &d3drect, D3DLOCK_READONLY);
     if (FAILED(result)) {
         IDirect3DSurface9_Release(surface);
-        IDirect3DSurface9_Release(backBuffer);
         return D3D_SetError("LockRect()", result);
     }
 
@@ -1506,6 +1532,13 @@ D3D_DestroyTexture(SDL_Renderer * renderer, SDL_Texture * texture)
 
     if (renderdata->drawstate.texture == texture) {
         renderdata->drawstate.texture = NULL;
+        renderdata->drawstate.shader = NULL;
+        IDirect3DDevice9_SetPixelShader(renderdata->device, NULL);
+        IDirect3DDevice9_SetTexture(renderdata->device, 0, NULL);
+        if (data->yuv) {
+            IDirect3DDevice9_SetTexture(renderdata->device, 1, NULL);
+            IDirect3DDevice9_SetTexture(renderdata->device, 2, NULL);
+        }
     }
 
     if (!data) {
@@ -1542,6 +1575,13 @@ D3D_DestroyRenderer(SDL_Renderer * renderer)
                 IDirect3DPixelShader9_Release(data->shaders[i]);
                 data->shaders[i] = NULL;
             }
+        }
+        /* Release all vertex buffers */
+        for (i = 0; i < SDL_arraysize(data->vertexBuffers); ++i) {
+            if (data->vertexBuffers[i]) {
+                IDirect3DVertexBuffer9_Release(data->vertexBuffers[i]);
+            }
+            data->vertexBuffers[i] = NULL;
         }
         if (data->device) {
             IDirect3DDevice9_Release(data->device);
@@ -1584,12 +1624,13 @@ D3D_Reset(SDL_Renderer * renderer)
         }
     }
 
-	/* Release all vertex buffers */
+    /* Release all vertex buffers */
     for (i = 0; i < SDL_arraysize(data->vertexBuffers); ++i) {
         if (data->vertexBuffers[i]) {
             IDirect3DVertexBuffer9_Release(data->vertexBuffers[i]);
         }
         data->vertexBuffers[i] = NULL;
+        data->vertexBufferSize[i] = 0;
     }
 
     result = IDirect3DDevice9_Reset(data->device, &data->pparams);
@@ -1674,6 +1715,7 @@ D3D_CreateRenderer(SDL_Window * window, Uint32 flags)
     renderer->UpdateTextureYUV = D3D_UpdateTextureYUV;
     renderer->LockTexture = D3D_LockTexture;
     renderer->UnlockTexture = D3D_UnlockTexture;
+    renderer->SetTextureScaleMode = D3D_SetTextureScaleMode;
     renderer->SetRenderTarget = D3D_SetRenderTarget;
     renderer->QueueSetViewport = D3D_QueueSetViewport;
     renderer->QueueSetDrawColor = D3D_QueueSetViewport;  /* SetViewport and SetDrawColor are (currently) no-ops. */

@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2020 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -123,6 +123,8 @@ SDL_bool Android_JNI_SetSystemCursor(int cursorID);
 SDL_bool Android_JNI_SupportsRelativeMouse(void);
 SDL_bool Android_JNI_SetRelativeMouseEnabled(SDL_bool enabled);
 
+/* Request permission */
+SDL_bool Android_JNI_RequestPermission(const char *permission);
 
 int SDL_GetAndroidSDKVersion(void);
 
@@ -130,6 +132,10 @@ SDL_bool SDL_IsAndroidTablet(void);
 SDL_bool SDL_IsAndroidTV(void);
 SDL_bool SDL_IsChromebook(void);
 SDL_bool SDL_IsDeXMode(void);
+
+void Android_ActivityMutex_Lock(void);
+void Android_ActivityMutex_Unlock(void);
+void Android_ActivityMutex_Lock_Running(void);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus
