@@ -1047,7 +1047,9 @@ HIDAPI_DriverXbox360_UpdateDriver(SDL_HIDAPI_DriverData *context, int *num_joyst
     int size;
     SDL_bool has_trigger_data = SDL_FALSE;
     SDL_bool correlated = SDL_FALSE;
+#ifdef SDL_JOYSTICK_HIDAPI_WINDOWS_MATCHING
     WindowsMatchState match_state_xinput;
+#endif
 
     if (joystick == NULL) {
         return SDL_TRUE; /* Nothing to do right now! */
