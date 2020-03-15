@@ -103,7 +103,7 @@ typedef struct _SDL_RAWINPUT_Device
     SDL_JoystickGUID guid;
     Uint16 usage_page;
     Uint16 usage;
-    SDL_HIDAPI_Device device;
+    SDL_HIDAPI_Device hiddevice;
     SDL_HIDAPI_DeviceDriver *driver;
 
     HANDLE hDevice;
@@ -114,6 +114,7 @@ typedef struct _SDL_RAWINPUT_Device
 
 struct joystick_hwdata
 {
+    void *reserved; /* reserving a value here to ensure the new SDL_hidapijoystick.c code never dereferences this */
     SDL_RAWINPUT_Device *device;
     SDL_mutex *mutex;
 };
@@ -354,10 +355,10 @@ RAWINPUT_AddDevice(HANDLE hDevice)
         SDL_RAWINPUT_devices = device;
     }
 
-    SDL_RAWINPUT_numjoysticks += 1;
-    /* InitDriver calls SDL_GetNextJoystickInstanceID() and SDL_PrivateJoystickAdded(), and calls back in to us, so
+    ++SDL_RAWINPUT_numjoysticks;
+    /* InitDevice calls SDL_GetNextJoystickInstanceID() and SDL_PrivateJoystickAdded(), and calls back in to us, so
       the device list must be updated before calling this. */
-    CHECK(device->driver->InitDevice(&device->device));
+    CHECK(device->driver->InitDevice(&device->hiddevice));
 
     return;
 
@@ -368,7 +369,6 @@ err:
         SDL_free(device);
     }
 }
-
 
 static void
 RAWINPUT_DelDevice(SDL_RAWINPUT_Device *device, SDL_bool send_event)
@@ -381,6 +381,7 @@ RAWINPUT_DelDevice(SDL_RAWINPUT_Device *device, SDL_bool send_event)
             } else {
                 SDL_RAWINPUT_devices = curr->next;
             }
+            --SDL_RAWINPUT_numjoysticks;
 
             SDL_Joystick *joystick = device->joystick;
             if (joystick) {
@@ -389,9 +390,12 @@ RAWINPUT_DelDevice(SDL_RAWINPUT_Device *device, SDL_bool send_event)
                 SDL_assert(hwdata->device == device);
                 hwdata->device = NULL;
                 device->joystick = NULL;
+
+                /* Calls SDL_PrivateJoystickRemoved() */
+                HIDAPI_JoystickDisconnected(&device->hiddevice, joystick->instance_id, SDL_TRUE);
             }
 
-            device->driver->CloseJoystick(&device->device, joystick);
+            device->driver->CloseJoystick(&device->hiddevice, joystick);
 
 #ifdef DEBUG_RAWINPUT
             SDL_Log("Removing RAWINPUT device '%s' VID 0x%.4x, PID 0x%.4x, version %d, handle 0x%.8x\n", device->name, device->vendor_id, device->product_id, device->version, device->hDevice);
@@ -494,14 +498,14 @@ RAWINPUT_GetJoystickByIndex(int device_index, SDL_JoystickID *pJoystickID)
     SDL_RAWINPUT_Device *device = SDL_RAWINPUT_devices;
     while (device) {
         if (device->driver) {
-            SDL_assert(device->device.num_joysticks == 1);
-            if (device_index < device->device.num_joysticks) {
+            SDL_assert(device->hiddevice.num_joysticks == 1);
+            if (device_index < device->hiddevice.num_joysticks) {
                 if (pJoystickID) {
-                    *pJoystickID = device->device.joysticks[device_index];
+                    *pJoystickID = device->hiddevice.joysticks[device_index];
                 }
                 return device;
             }
-            device_index -= device->device.num_joysticks;
+            device_index -= device->hiddevice.num_joysticks;
         }
         device = device->next;
     }
@@ -523,7 +527,7 @@ RAWINPUT_JoystickGetDevicePlayerIndex(int device_index)
 
     device = RAWINPUT_GetJoystickByIndex(device_index, &instance_id);
     if (device && device->driver) {
-        player_index = device->driver->GetDevicePlayerIndex(&device->device, instance_id);
+        player_index = device->driver->GetDevicePlayerIndex(&device->hiddevice, instance_id);
     }
 
     return player_index;
@@ -537,7 +541,7 @@ RAWINPUT_JoystickSetDevicePlayerIndex(int device_index, int player_index)
 
     device = RAWINPUT_GetJoystickByIndex(device_index, &instance_id);
     if (device) {
-        device->driver->SetDevicePlayerIndex(&device->device, instance_id, player_index);
+        device->driver->SetDevicePlayerIndex(&device->hiddevice, instance_id, player_index);
     }
 }
 
@@ -567,8 +571,12 @@ RAWINPUT_JoystickOpen(SDL_Joystick * joystick, int device_index)
         return SDL_OutOfMemory();
     }
 
-    device->driver->OpenJoystick(&device->device, joystick);
+    if (!device->driver->OpenJoystick(&device->hiddevice, joystick)) {
+        /* Only possible error is out of memory */
+        return SDL_OutOfMemory();
+    }
 
+    hwdata->reserved = (void*)-1; /* crash if some code slips by that tries to use this */
     hwdata->device = device;
     device->joystick = joystick;
 
@@ -586,7 +594,7 @@ RAWINPUT_JoystickRumble(SDL_Joystick * joystick, Uint16 low_frequency_rumble, Ui
     int result;
 
     SDL_LockMutex(hwdata->mutex);
-    result = device->driver->RumbleJoystick(&device->device, joystick, low_frequency_rumble, high_frequency_rumble);
+    result = device->driver->RumbleJoystick(&device->hiddevice, joystick, low_frequency_rumble, high_frequency_rumble);
     SDL_UnlockMutex(hwdata->mutex);
     return result;
 }
@@ -602,7 +610,7 @@ RAWINPUT_JoystickUpdate(SDL_Joystick * joystick)
     device = hwdata->device;
 
     SDL_LockMutex(hwdata->mutex);
-    device->driver->UpdateDevice(&device->device);
+    device->driver->UpdateDevice(&device->hiddevice);
     SDL_UnlockMutex(hwdata->mutex);
 }
 
@@ -661,7 +669,7 @@ LRESULT RAWINPUT_WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     SDL_HIDAPI_DeviceDriver *driver = device->driver;
                     SDL_Joystick *joystick = device->joystick;
                     if (joystick) {
-                        driver->HandleStatePacketFromRAWINPUT(&device->device, joystick, &raw_input->data.hid.bRawData[1], raw_input->data.hid.dwSizeHid - 1);
+                        driver->HandleStatePacketFromRAWINPUT(&device->hiddevice, joystick, &raw_input->data.hid.bRawData[1], raw_input->data.hid.dwSizeHid - 1);
                     }
                 }
             }

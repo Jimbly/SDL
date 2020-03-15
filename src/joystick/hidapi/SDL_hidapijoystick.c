@@ -510,7 +510,7 @@ HIDAPI_CleanupDeviceDriver(SDL_HIDAPI_Device *device)
 
     /* Disconnect any joysticks */
     while (device->num_joysticks) {
-        HIDAPI_JoystickDisconnected(device, device->joysticks[0]);
+        HIDAPI_JoystickDisconnected(device, device->joysticks[0], SDL_FALSE);
     }
 
     device->driver->FreeDevice(device);
@@ -604,7 +604,7 @@ HIDAPI_JoystickInit(void)
 }
 
 SDL_bool
-HIDAPI_JoystickConnected(SDL_HIDAPI_Device *device, SDL_JoystickID *pJoystickID)
+HIDAPI_JoystickConnected(SDL_HIDAPI_Device *device, SDL_JoystickID *pJoystickID, SDL_bool is_external)
 {
     SDL_JoystickID joystickID;
     SDL_JoystickID *joysticks = (SDL_JoystickID *)SDL_realloc(device->joysticks, (device->num_joysticks + 1)*sizeof(*device->joysticks));
@@ -615,7 +615,9 @@ HIDAPI_JoystickConnected(SDL_HIDAPI_Device *device, SDL_JoystickID *pJoystickID)
     joystickID = SDL_GetNextJoystickInstanceID();
     device->joysticks = joysticks;
     device->joysticks[device->num_joysticks++] = joystickID;
-    ++SDL_HIDAPI_numjoysticks;
+    if (!is_external) {
+        ++SDL_HIDAPI_numjoysticks;
+    }
 
     SDL_PrivateJoystickAdded(joystickID);
 
@@ -626,20 +628,22 @@ HIDAPI_JoystickConnected(SDL_HIDAPI_Device *device, SDL_JoystickID *pJoystickID)
 }
 
 void
-HIDAPI_JoystickDisconnected(SDL_HIDAPI_Device *device, SDL_JoystickID joystickID)
+HIDAPI_JoystickDisconnected(SDL_HIDAPI_Device *device, SDL_JoystickID joystickID, SDL_bool is_external)
 {
     int i;
 
     for (i = 0; i < device->num_joysticks; ++i) {
         if (device->joysticks[i] == joystickID) {
             SDL_Joystick *joystick = SDL_JoystickFromInstanceID(joystickID);
-            if (joystick) {
+            if (joystick && !is_external) {
                 HIDAPI_JoystickClose(joystick);
             }
 
             SDL_memmove(&device->joysticks[i], &device->joysticks[i+1], device->num_joysticks - i - 1);
             --device->num_joysticks;
-            --SDL_HIDAPI_numjoysticks;
+            if (!is_external) {
+                --SDL_HIDAPI_numjoysticks;
+            }
             if (device->num_joysticks == 0) {
                 SDL_free(device->joysticks);
                 device->joysticks = NULL;

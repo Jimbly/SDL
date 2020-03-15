@@ -314,6 +314,10 @@ void renderFrame() {
 		case 'w':
 			joystick_cursor--;
 			break;
+		case 'r':
+			if (joystick_state[joystick_cursor].joystick)
+				SDL_JoystickRumble(joystick_state[joystick_cursor].joystick, 0xFFFF, 0xFFFF, 1000);
+			break;
 		case 27:
 			exit(0);
 			break;
