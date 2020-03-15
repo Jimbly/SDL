@@ -6,7 +6,7 @@ Herein lies the version of SDL used by libGLOV for all of [Dashing Strike](http:
 Binary releases available [here](https://jimbly.github.io/SDL/)
 
 Primary changes from vanilla SDL (some waiting on SDL bugs to be merged/resolved):
-* [Support more than 4 XInput devices by default](https://github.com/Jimbly/SDL/commit/0b096cb0af45cb46315c9f1c0485afc08f85e5ee) [[SDL Bugtracker](https://bugzilla.libsdl.org/show_bug.cgi?id=4477)]
+* [Support more than 4 XInput devices by default](https://github.com/Jimbly/SDL/commit/640323d4657b851783adf45bc63153cf4767cc0b) [[SDL Bugtracker](https://bugzilla.libsdl.org/show_bug.cgi?id=4477)]
   * Because we can, and should.  Uses RawInput correlated with XInput.
 * [Expose IME candidate list on Windows](https://github.com/Jimbly/SDL/commit/39f1d306eb689842981d29246fcda5fa419b68b1)
   * Useful if you want nice, in-game IME
