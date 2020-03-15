@@ -649,8 +649,7 @@ static SDL_bool SetSlotLED(hid_device *dev, Uint8 slot)
 static SDL_bool
 HIDAPI_DriverXbox360_InitDevice(SDL_HIDAPI_Device *device)
 {
-    /* device->dev is NULL iff this is called through the RAWINPUT driver */
-    return HIDAPI_JoystickConnected(device, NULL, device->dev ? SDL_FALSE : SDL_TRUE);
+    return HIDAPI_JoystickConnected(device, NULL, SDL_FALSE);
 }
 
 static int

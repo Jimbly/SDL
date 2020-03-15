@@ -93,6 +93,7 @@ static SDL_bool SDL_RAWINPUT_need_pump = SDL_TRUE;
 static void RAWINPUT_JoystickDetect(void);
 static void RAWINPUT_PumpMessages(void);
 static SDL_bool RAWINPUT_IsDeviceSupported(Uint16 vendor_id, Uint16 product_id, Uint16 version);
+static void RAWINPUT_JoystickClose(SDL_Joystick * joystick);
 
 typedef struct _SDL_RAWINPUT_Device
 {
@@ -108,6 +109,7 @@ typedef struct _SDL_RAWINPUT_Device
 
     HANDLE hDevice;
     SDL_Joystick *joystick;
+    SDL_JoystickID joystick_id;
 
     struct _SDL_RAWINPUT_Device *next;
 } SDL_RAWINPUT_Device;
@@ -356,9 +358,10 @@ RAWINPUT_AddDevice(HANDLE hDevice)
     }
 
     ++SDL_RAWINPUT_numjoysticks;
-    /* InitDevice calls SDL_GetNextJoystickInstanceID() and SDL_PrivateJoystickAdded(), and calls back in to us, so
+    /* HIDAPI_JoystickConnected calls SDL_GetNextJoystickInstanceID() and SDL_PrivateJoystickAdded(), and calls back in to us, so
       the device list must be updated before calling this. */
-    CHECK(device->driver->InitDevice(&device->hiddevice));
+    CHECK(HIDAPI_JoystickConnected(&device->hiddevice, &device->joystick_id, SDL_TRUE));
+    /* Old: CHECK(device->driver->InitDevice(&device->hiddevice)); But, we need the joystick_id */
 
     return;
 
@@ -386,16 +389,10 @@ RAWINPUT_DelDevice(SDL_RAWINPUT_Device *device, SDL_bool send_event)
             SDL_Joystick *joystick = device->joystick;
             if (joystick) {
                 /* Detach from joystick */
-                struct joystick_hwdata *hwdata = device->joystick->hwdata;
-                SDL_assert(hwdata->device == device);
-                hwdata->device = NULL;
-                device->joystick = NULL;
-
-                /* Calls SDL_PrivateJoystickRemoved() */
-                HIDAPI_JoystickDisconnected(&device->hiddevice, joystick->instance_id, SDL_TRUE);
+                RAWINPUT_JoystickClose(joystick);
             }
-
-            device->driver->CloseJoystick(&device->hiddevice, joystick);
+            /* Calls SDL_PrivateJoystickRemoved() */
+            HIDAPI_JoystickDisconnected(&device->hiddevice, device->joystick_id, SDL_TRUE);
 
 #ifdef DEBUG_RAWINPUT
             SDL_Log("Removing RAWINPUT device '%s' VID 0x%.4x, PID 0x%.4x, version %d, handle 0x%.8x\n", device->name, device->vendor_id, device->product_id, device->version, device->hDevice);
@@ -618,17 +615,21 @@ static void
 RAWINPUT_JoystickClose(SDL_Joystick * joystick)
 {
     struct joystick_hwdata *hwdata = joystick->hwdata;
-    SDL_RAWINPUT_Device *device;
 
-    device = hwdata->device;
-    if (device) {
-        SDL_assert(device->joystick == joystick);
-        device->joystick = NULL;
+    if (hwdata) {
+        SDL_RAWINPUT_Device *device;
+
+        device = hwdata->device;
+        if (device) {
+            SDL_assert(device->joystick == joystick);
+            device->driver->CloseJoystick(&device->hiddevice, joystick);
+            device->joystick = NULL;
+        }
+
+        SDL_DestroyMutex(hwdata->mutex);
+        SDL_free(hwdata);
+        joystick->hwdata = NULL;
     }
-
-    SDL_DestroyMutex(hwdata->mutex);
-    SDL_free(hwdata);
-    joystick->hwdata = NULL;
 }
 
 LRESULT RAWINPUT_WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
