@@ -253,20 +253,6 @@ AddXInputDevice(Uint8 userid, BYTE SubType, JoyStick_DeviceData **pContext)
         return; /* better luck next time? */
     }
 
-#ifdef SDL_JOYSTICK_ANNOTATE_NAMES
-    {
-        size_t name_size = SDL_strlen(pNewJoystick->joystickname) + SDL_arraysize("XINPUT:") + 1;
-        char *name = (char *)SDL_malloc(name_size);
-        if (!name) {
-            SDL_free(pNewJoystick);
-            return;
-        }
-        SDL_snprintf(name, name_size, "XINPUT:%s", pNewJoystick->joystickname);
-        SDL_free(pNewJoystick->joystickname);
-        pNewJoystick->joystickname = name;
-    }
-#endif
-
     pNewJoystick->bXInputDevice = SDL_TRUE;
     if (!SDL_XInputUseOldJoystickMapping()) {
         Uint16 *guid16 = (Uint16 *)pNewJoystick->guid.data;
@@ -298,6 +284,20 @@ AddXInputDevice(Uint8 userid, BYTE SubType, JoyStick_DeviceData **pContext)
         SDL_free(pNewJoystick);
         return;
     }
+
+#ifdef SDL_JOYSTICK_ANNOTATE_NAMES
+    {
+        size_t name_size = SDL_strlen(pNewJoystick->joystickname) + SDL_arraysize("XINPUT:") + 1;
+        char *name = (char *)SDL_malloc(name_size);
+        if (!name) {
+            SDL_free(pNewJoystick);
+            return;
+        }
+        SDL_snprintf(name, name_size, "XINPUT:%s", pNewJoystick->joystickname);
+        SDL_free(pNewJoystick->joystickname);
+        pNewJoystick->joystickname = name;
+    }
+#endif
 
 #ifdef SDL_JOYSTICK_HIDAPI
     if (HIDAPI_IsDevicePresent(vendor, product, version, pNewJoystick->joystickname)) {
@@ -341,6 +341,18 @@ SDL_XINPUT_JoystickDetect(JoyStick_DeviceData **pContext)
         const Uint8 userid = (Uint8)iuserid;
         XINPUT_CAPABILITIES capabilities;
         if (XINPUTGETCAPABILITIES(userid, XINPUT_FLAG_GAMEPAD, &capabilities) == ERROR_SUCCESS) {
+            /* Adding a new device, must handle all removes first, or GuessXInputDevice goes terribly wrong (returns
+              a product/vendor ID that is not even attached to the system) when we get a remove and add on the same tick
+              (e.g. when disconnecting a device and the OS reassigns which userid an already-attached controller is)
+            */
+            int iuserid2;
+            for (iuserid2 = iuserid - 1; iuserid2 >= 0; iuserid2--) {
+                const Uint8 userid2 = (Uint8)iuserid2;
+                XINPUT_CAPABILITIES capabilities2;
+                if (XINPUTGETCAPABILITIES(userid2, XINPUT_FLAG_GAMEPAD, &capabilities2) != ERROR_SUCCESS) {
+                    DelXInputDevice(userid2);
+                }
+            }
             AddXInputDevice(userid, capabilities.SubType, pContext);
         } else {
             DelXInputDevice(userid);
