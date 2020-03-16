@@ -421,7 +421,7 @@ HIDAPI_GetDeviceDriver(SDL_HIDAPI_Device *device)
     }
 
 #ifdef SDL_JOYSTICK_RAWINPUT
-    if (RAWINPUT_IsDevicePresent(device->vendor_id, device->product_id, device->version)) {
+    if (RAWINPUT_IsDevicePresent(device->vendor_id, device->product_id, device->version, device->name)) {
         /* The RAWINPUT driver is taking care of this device */
         return NULL;
     }

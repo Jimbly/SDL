@@ -92,7 +92,7 @@ static SDL_bool SDL_RAWINPUT_need_pump = SDL_TRUE;
 
 static void RAWINPUT_JoystickDetect(void);
 static void RAWINPUT_PumpMessages(void);
-static SDL_bool RAWINPUT_IsDeviceSupported(Uint16 vendor_id, Uint16 product_id, Uint16 version);
+static SDL_bool RAWINPUT_IsDeviceSupported(Uint16 vendor_id, Uint16 product_id, Uint16 version, const char *name);
 static void RAWINPUT_JoystickClose(SDL_Joystick * joystick);
 
 typedef struct _SDL_RAWINPUT_Device
@@ -163,7 +163,7 @@ SDL_bool RAWINPUT_AllXInputDevicesSupported() {
             (SDL_strstr(devName, "IG_") != NULL)
         ) {
             /* XInput-capable */
-            if (!RAWINPUT_IsDeviceSupported((Uint16)rdi.hid.dwVendorId, (Uint16)rdi.hid.dwProductId, (Uint16)rdi.hid.dwVersionNumber)) {
+            if (!RAWINPUT_IsDeviceSupported((Uint16)rdi.hid.dwVendorId, (Uint16)rdi.hid.dwProductId, (Uint16)rdi.hid.dwVersionNumber, NULL)) {
                 /* But not supported, probably Valve virtual controller */
                 any_unsupported = SDL_TRUE;
             }
@@ -430,11 +430,11 @@ RAWINPUT_UpdateDeviceList(void)
 }
 
 static SDL_bool
-RAWINPUT_IsDeviceSupported(Uint16 vendor_id, Uint16 product_id, Uint16 version)
+RAWINPUT_IsDeviceSupported(Uint16 vendor_id, Uint16 product_id, Uint16 version, const char *name)
 {
     int i;
 
-    SDL_GameControllerType type = SDL_GetJoystickGameControllerType("", vendor_id, product_id, -1, 0, 0, 0);
+    SDL_GameControllerType type = SDL_GetJoystickGameControllerType(name, vendor_id, product_id, -1, 0, 0, 0);
 
     for (i = 0; i < SDL_arraysize(SDL_RAWINPUT_drivers); ++i) {
         SDL_HIDAPI_DeviceDriver *driver = SDL_RAWINPUT_drivers[i];
@@ -442,7 +442,7 @@ RAWINPUT_IsDeviceSupported(Uint16 vendor_id, Uint16 product_id, Uint16 version)
             we still want RawInput to use it.  If we end up with more than one RawInput driver, we may need to rework
             how the hints interact (separate enabled state, perhaps).
         */
-        if (/*driver->enabled && */driver->IsSupportedDevice(NULL, type, vendor_id, product_id, version, -1, 0, 0, 0)) {
+        if (/*driver->enabled && */driver->IsSupportedDevice(name, type, vendor_id, product_id, version, -1, 0, 0, 0)) {
             return SDL_TRUE;
         }
     }
@@ -450,12 +450,12 @@ RAWINPUT_IsDeviceSupported(Uint16 vendor_id, Uint16 product_id, Uint16 version)
 }
 
 SDL_bool
-RAWINPUT_IsDevicePresent(Uint16 vendor_id, Uint16 product_id, Uint16 version)
+RAWINPUT_IsDevicePresent(Uint16 vendor_id, Uint16 product_id, Uint16 version, const char *name)
 {
     SDL_RAWINPUT_Device *device;
 
     /* Don't update the device list for devices we know aren't supported */
-    if (!RAWINPUT_IsDeviceSupported(vendor_id, product_id, version)) {
+    if (!RAWINPUT_IsDeviceSupported(vendor_id, product_id, version, name)) {
         return SDL_FALSE;
     }
 
