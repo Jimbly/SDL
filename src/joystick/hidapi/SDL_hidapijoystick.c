@@ -492,6 +492,18 @@ HIDAPI_SetupDeviceDriver(SDL_HIDAPI_Device *device)
             SDL_free(device->name);
             device->name = SDL_strdup(name);
         }
+#ifdef SDL_JOYSTICK_ANNOTATE_NAMES
+		{
+			size_t name_size = SDL_strlen(device->name) + SDL_arraysize("HIDAPI:") + 1;
+			char *name = (char *)SDL_malloc(name_size);
+			if (name) {
+				SDL_snprintf(name, name_size, "HIDAPI:%s", device->name);
+				SDL_free(device->name);
+				device->name = name;
+			}
+		}
+#endif
+
     }
 
     /* Initialize the device, which may cause a connected event */
