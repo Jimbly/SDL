@@ -25,7 +25,7 @@
 #include "../SDL_internal.h"
 
 /* Enable to get more detailed joystick names */
-/* #define SDL_JOYSTICK_ANNOTATE_NAMES */
+#define SDL_JOYSTICK_ANNOTATE_NAMES
 
 /* Useful functions and variables from SDL_joystick.c */
 #include "SDL_gamecontroller.h"
