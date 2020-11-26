@@ -214,6 +214,12 @@ const char *button_names[] = {
 	"v ",
 	"< ",
 	"> ",
+	"M1",
+	"P1",
+	"P2",
+	"P3",
+	"P4",
+	"TP",
 };
 const char *buttonName(bool is_gamecontroller, int idx) {
 	if (is_gamecontroller) {
