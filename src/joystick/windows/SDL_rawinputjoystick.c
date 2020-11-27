@@ -196,25 +196,25 @@ static void RAWINPUT_FillMatchState(WindowsMatchState *state, Uint32 match_state
         }; */
     for (ii = 0; ii < 4; ii++) {
         state->match_axes[ii] = (match_state & (0x000F0000 << (ii * 4))) >> (4 + ii * 4);
-        if ((Uint32)(state->match_axes[ii] + 0x1000) > 0x2000) { /* match_state bit is not 0xF, 0x1, or 0x2 */
+        if ((Uint32)(state->match_axes[ii] + 0x2000) > 0x4000) { /* match_state 4-bit value is not 0xE, 0xF, 0x0, 0x1, or 0x2 [-2...2] */
             state->any_data = SDL_TRUE;
         }
     }
 #endif /* SDL_JOYSTICK_RAWINPUT_MATCH_AXES */
 
 #ifdef SDL_JOYSTICK_RAWINPUT_XINPUT
-    /* Match axes by checking if the distance between the high 4 bits of axis and the 4 bits from match_state is 1 or less */
+    /* Match axes by checking if the distance between the high 4 bits of axis and the 4 bits from match_state is 2 or less */
 #define XInputAxesMatch(gamepad) (\
-   (Uint32)(gamepad.sThumbLX - state->match_axes[0] + 0x1000) <= 0x2fff && \
-   (Uint32)(~gamepad.sThumbLY - state->match_axes[1] + 0x1000) <= 0x2fff && \
-   (Uint32)(gamepad.sThumbRX - state->match_axes[2] + 0x1000) <= 0x2fff && \
-   (Uint32)(~gamepad.sThumbRY - state->match_axes[3] + 0x1000) <= 0x2fff)
+   (Uint32)(gamepad.sThumbLX - state->match_axes[0] + 0x2000) <= 0x4fff && \
+   (Uint32)(~gamepad.sThumbLY - state->match_axes[1] + 0x2000) <= 0x4fff && \
+   (Uint32)(gamepad.sThumbRX - state->match_axes[2] + 0x2000) <= 0x4fff && \
+   (Uint32)(~gamepad.sThumbRY - state->match_axes[3] + 0x2000) <= 0x4fff)
     /* Explicit
 #define XInputAxesMatch(gamepad) (\
-    SDL_abs((Sint8)((gamepad.sThumbLX & 0xF000) >> 8) - ((match_state & 0x000F0000) >> 12)) <= 0x10 && \
-    SDL_abs((Sint8)((~gamepad.sThumbLY & 0xF000) >> 8) - ((match_state & 0x00F00000) >> 16)) <= 0x10 && \
-    SDL_abs((Sint8)((gamepad.sThumbRX & 0xF000) >> 8) - ((match_state & 0x0F000000) >> 20)) <= 0x10 && \
-    SDL_abs((Sint8)((~gamepad.sThumbRY & 0xF000) >> 8) - ((match_state & 0xF0000000) >> 24)) <= 0x10) */
+    SDL_abs((Sint8)((gamepad.sThumbLX & 0xF000) >> 8) - ((match_state & 0x000F0000) >> 12)) <= 0x20 && \
+    SDL_abs((Sint8)((~gamepad.sThumbLY & 0xF000) >> 8) - ((match_state & 0x00F00000) >> 16)) <= 0x20 && \
+    SDL_abs((Sint8)((gamepad.sThumbRX & 0xF000) >> 8) - ((match_state & 0x0F000000) >> 20)) <= 0x20 && \
+    SDL_abs((Sint8)((~gamepad.sThumbRY & 0xF000) >> 8) - ((match_state & 0xF0000000) >> 24)) <= 0x20) */
 
     state->xinput_buttons =
         /* Bitwise map .RLDUWVQTS.KYXBA -> YXBA..WVQTKSRLDU */
@@ -241,12 +241,12 @@ static void RAWINPUT_FillMatchState(WindowsMatchState *state, Uint32 match_state
 #endif
 
 #ifdef SDL_JOYSTICK_RAWINPUT_WGI
-    /* Match axes by checking if the distance between the high 4 bits of axis and the 4 bits from match_state is 1 or less */
+    /* Match axes by checking if the distance between the high 4 bits of axis and the 4 bits from match_state is 2 or less */
 #define WindowsGamingInputAxesMatch(gamepad) (\
-    (Uint16)(((Sint16)(gamepad.LeftThumbstickX * SDL_MAX_SINT16) & 0xF000) - state->match_axes[0] + 0x1000) <= 0x2fff && \
-    (Uint16)((~(Sint16)(gamepad.LeftThumbstickY * SDL_MAX_SINT16) & 0xF000) - state->match_axes[1] + 0x1000) <= 0x2fff && \
-    (Uint16)(((Sint16)(gamepad.RightThumbstickX * SDL_MAX_SINT16) & 0xF000) - state->match_axes[2] + 0x1000) <= 0x2fff && \
-    (Uint16)((~(Sint16)(gamepad.RightThumbstickY * SDL_MAX_SINT16) & 0xF000) - state->match_axes[3] + 0x1000) <= 0x2fff)
+    (Uint16)(((Sint16)(gamepad.LeftThumbstickX * SDL_MAX_SINT16) & 0xF000) - state->match_axes[0] + 0x2000) <= 0x4fff && \
+    (Uint16)((~(Sint16)(gamepad.LeftThumbstickY * SDL_MAX_SINT16) & 0xF000) - state->match_axes[1] + 0x2000) <= 0x4fff && \
+    (Uint16)(((Sint16)(gamepad.RightThumbstickX * SDL_MAX_SINT16) & 0xF000) - state->match_axes[2] + 0x2000) <= 0x4fff && \
+    (Uint16)((~(Sint16)(gamepad.RightThumbstickY * SDL_MAX_SINT16) & 0xF000) - state->match_axes[3] + 0x2000) <= 0x4fff)
 
 
     state->wgi_buttons =
